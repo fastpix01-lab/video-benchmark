@@ -68,7 +68,7 @@ export default function LandingPage() {
                 href="/methodology"
                 className="inline-flex items-center rounded-lg border border-zinc-300 dark:border-zinc-700 px-6 py-3 text-sm font-semibold text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors"
               >
-                View Methodology
+                How We Test
               </Link>
             </div>
           </AnimatedSection>

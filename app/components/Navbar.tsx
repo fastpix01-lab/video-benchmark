@@ -9,7 +9,7 @@ import { useThemeContext } from "./ThemeProvider";
 const NAV_LINKS = [
   { href: "/", label: "Home" },
   { href: "/benchmark", label: "Benchmark" },
-  { href: "/methodology", label: "Methodology" },
+  { href: "/methodology", label: "How We Test" },
   { href: "/blog", label: "Blog" },
 ];
 

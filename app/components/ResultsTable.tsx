@@ -24,7 +24,7 @@ export default function ResultsTable({ results }: { results: ProviderMetrics[] }
         {results.map((r) => (
           <tr
             key={r.provider}
-            className="border-b border-zinc-100 dark:border-zinc-800 last:border-0"
+            className="border-b border-zinc-100 dark:border-zinc-800 last:border-0 transition-colors duration-100 hover:bg-zinc-50 dark:hover:bg-zinc-800/40"
           >
             <td className="px-4 py-3 font-medium text-zinc-900 dark:text-zinc-100">
               {r.providerName}

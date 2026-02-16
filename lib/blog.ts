@@ -5,6 +5,8 @@ export interface BlogPost {
   excerpt: string;
   readingTime: string;
   author: string;
+  category: string;
+  gradient: string;
 }
 
 export const posts: BlogPost[] = [
@@ -16,6 +18,8 @@ export const posts: BlogPost[] = [
       "We compared FastPix and Mux head-to-head across upload speed, processing time, and startup latency. Here are the results.",
     readingTime: "5 min read",
     author: "StreamBench Team",
+    category: "Benchmark",
+    gradient: "from-blue-500 to-violet-600",
   },
   {
     slug: "startup-time-matters",
@@ -25,6 +29,8 @@ export const posts: BlogPost[] = [
       "Startup time directly impacts viewer retention. Studies show every 1-second increase in buffering causes a 6% drop in watch time.",
     readingTime: "4 min read",
     author: "StreamBench Team",
+    category: "Research",
+    gradient: "from-emerald-500 to-teal-600",
   },
   {
     slug: "cloudinary-apivideo-gumlet",
@@ -34,6 +40,8 @@ export const posts: BlogPost[] = [
       "A three-way comparison of Cloudinary, api.video, and Gumlet — examining upload workflows, processing speeds, and HLS delivery.",
     readingTime: "6 min read",
     author: "StreamBench Team",
+    category: "Comparison",
+    gradient: "from-orange-500 to-rose-600",
   },
   {
     slug: "video-processing-pipelines",
@@ -43,6 +51,8 @@ export const posts: BlogPost[] = [
       "What happens after you upload a video? We break down the transcoding, packaging, and CDN delivery steps that every provider performs.",
     readingTime: "7 min read",
     author: "StreamBench Team",
+    category: "Deep Dive",
+    gradient: "from-violet-500 to-purple-600",
   },
   {
     slug: "measuring-video-performance",
@@ -52,6 +62,8 @@ export const posts: BlogPost[] = [
       "Our benchmarking methodology: how we measure upload time, processing time, and time-to-first-frame across providers.",
     readingTime: "5 min read",
     author: "StreamBench Team",
+    category: "Methodology",
+    gradient: "from-cyan-500 to-blue-600",
   },
 ];
 
@@ -61,4 +73,8 @@ export function getPost(slug: string): BlogPost | undefined {
 
 export function getAllSlugs(): string[] {
   return posts.map((p) => p.slug);
+}
+
+export function getRelatedPosts(currentSlug: string, count = 2): BlogPost[] {
+  return posts.filter((p) => p.slug !== currentSlug).slice(0, count);
 }

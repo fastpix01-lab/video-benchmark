@@ -42,8 +42,6 @@ export const gumletProvider: VideoProvider = {
         url: json.upload_url,
         method: "PUT" as const,
         bodyType: "raw" as const,
-        // Gumlet's pre-signed S3 URL rejects browser CORS preflights → proxy
-        proxy: true,
       },
     };
   },

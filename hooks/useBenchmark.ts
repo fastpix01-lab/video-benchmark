@@ -9,7 +9,7 @@ import type {
   CreateUploadResult,
   StatusResult,
 } from "@/lib/providers/types";
-import { PROVIDERS, MAX_RETRIES, POLL_INTERVAL, POLL_TIMEOUT } from "@/lib/constants";
+import { PROVIDERS, DEFAULT_ENABLED, MAX_RETRIES, POLL_INTERVAL, POLL_TIMEOUT } from "@/lib/constants";
 
 export type Step = "uploading" | "processing" | "measuring";
 
@@ -25,7 +25,7 @@ export interface Progress {
 export function useBenchmark() {
   const [files, setFiles] = useState<File[]>([]);
   const [enabled, setEnabled] = useState<Set<string>>(
-    new Set(PROVIDERS.map((p) => p.slug))
+    new Set(DEFAULT_ENABLED)
   );
   const [running, setRunning] = useState(false);
   const [progress, setProgress] = useState<Progress | null>(null);
@@ -219,22 +219,37 @@ export function useBenchmark() {
     const { upload } = info;
 
     if (upload.sdkUpload) {
-      return new Promise<void>((resolve, reject) => {
-        try {
-          const uploader = Uploader.init({
-            endpoint: upload.url,
-            file,
-            chunkSize: 16 * 1024,
-          });
+      try {
+        await new Promise<void>((resolve, reject) => {
+          try {
+            const uploader = Uploader.init({
+              endpoint: upload.url,
+              file,
+              chunkSize: 16 * 1024,
+            });
 
-          uploader.on("success", () => resolve());
-          uploader.on("error", (event) => {
-            reject(new Error(`FastPix SDK upload error: ${event.detail.message || "unknown"}`));
-          });
-        } catch (err) {
-          reject(new Error(`FastPix SDK init failed: ${err instanceof Error ? err.message : "unknown"}`));
+            uploader.on("success", () => resolve());
+            uploader.on("error", (event) => {
+              reject(new Error(`FastPix SDK upload error: ${event.detail.message || "unknown"}`));
+            });
+          } catch (err) {
+            reject(new Error(`FastPix SDK init failed: ${err instanceof Error ? err.message : "unknown"}`));
+          }
+        });
+        return;
+      } catch {
+        // SDK failed — fall back to direct PUT upload
+        const res = await fetch(upload.url, {
+          method: "PUT",
+          body: file,
+          headers: { "Content-Type": file.type || "video/mp4" },
+        });
+        if (!res.ok) {
+          const errBody = await res.text().catch(() => "");
+          throw new Error(`Upload failed (${res.status}): ${errBody}`);
         }
-      });
+        return;
+      }
     }
 
     if (upload.bodyType === "raw") {

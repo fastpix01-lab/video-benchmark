@@ -63,8 +63,6 @@ export const apiVideoProvider: VideoProvider = {
         bodyType: "form-data" as const,
         formField: "file",
         headers: { Authorization: `Bearer ${token}` },
-        // api.video source endpoint rejects browser CORS preflights → proxy
-        proxy: true,
       },
     };
   },
