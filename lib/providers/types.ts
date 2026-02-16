@@ -9,8 +9,6 @@ export interface UploadConfig {
   proxy?: boolean;
   /** If true, use @fastpix/resumable-uploads SDK for chunked upload */
   sdkUpload?: boolean;
-  /** If true, upload through server-side tus proxy to bypass CORS */
-  tusProxy?: boolean;
 }
 
 export interface CreateUploadResult {

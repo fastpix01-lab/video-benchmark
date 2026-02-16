@@ -2,6 +2,7 @@
 
 import { useState, useRef, useCallback } from "react";
 import Hls from "hls.js";
+import { Uploader } from "@fastpix/resumable-uploads";
 import type {
   ProviderMetrics,
   BenchmarkRun,
@@ -217,56 +218,39 @@ export function useBenchmark() {
   async function performUpload(info: CreateUploadResult, file: File) {
     const { upload } = info;
 
-    // Chunked upload through server-side tus proxy (bypasses CORS)
-    if (upload.tusProxy) {
-      const TUS_CHUNK = 4 * 1024 * 1024; // 4 MB — under Vercel's 4.5 MB body limit
-      let offset = 0;
+    // FastPix: use their resumable uploads SDK (GCS resumable upload protocol)
+    // The SDK sends POST with x-goog-resumable header to initiate a session,
+    // then PUTs chunks with Content-Range directly from the browser.
+    // chunkSize is in KB per SDK docs — 16 * 1024 KB = 16 MB (default).
+    if (upload.sdkUpload) {
+      await new Promise<void>((resolve, reject) => {
+        try {
+          const uploader = Uploader.init({
+            endpoint: upload.url,
+            file,
+            chunkSize: 16 * 1024, // 16 MB in KB (SDK uses KB, not bytes)
+          });
 
-      // Send POST to initialize tus upload with file length
-      const initRes = await fetch("/api/providers/fastpix/tus-proxy", {
-        method: "POST",
-        headers: {
-          "x-upload-url": upload.url,
-          "upload-length": file.size.toString(),
-        },
+          uploader.on("success", () => resolve());
+          uploader.on("error", (event) => {
+            reject(
+              new Error(
+                event.detail.message || "FastPix SDK upload failed"
+              )
+            );
+          });
+        } catch (err) {
+          reject(
+            new Error(
+              `FastPix SDK init failed: ${err instanceof Error ? err.message : "unknown"}`
+            )
+          );
+        }
       });
-      if (!initRes.ok) {
-        const body = await initRes.json().catch(() => ({}));
-        // If POST fails (e.g. 405), proceed directly with PATCH — some tus servers
-        // accept PATCH from offset 0 without a creation step
-        if (initRes.status !== 405) {
-          console.warn(`Tus init returned ${initRes.status}, proceeding with PATCH`);
-        }
-      }
-
-      while (offset < file.size) {
-        if (abortRef.current) throw new Error("Cancelled");
-
-        const end = Math.min(offset + TUS_CHUNK, file.size);
-        const chunk = file.slice(offset, end);
-
-        const res = await fetch("/api/providers/fastpix/tus-proxy", {
-          method: "PATCH",
-          headers: {
-            "x-upload-url": upload.url,
-            "upload-offset": offset.toString(),
-            "content-type": "application/offset+octet-stream",
-          },
-          body: chunk,
-        });
-
-        if (!res.ok) {
-          const body = await res.json().catch(() => ({}));
-          throw new Error(body.error || `Chunk upload failed at offset ${offset}`);
-        }
-
-        const data = await res.json();
-        offset = parseInt(data.offset, 10) || end;
-      }
-
       return;
     }
 
+    // All other providers: direct browser upload via fetch
     if (upload.bodyType === "raw") {
       const headers: Record<string, string> = {
         "Content-Type": file.type || "video/mp4",
