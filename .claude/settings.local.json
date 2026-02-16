@@ -1,0 +1,19 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm install:*)",
+      "Bash(npx tsc:*)",
+      "Bash(npm run build:*)",
+      "Bash(ffmpeg:*)",
+      "Bash(curl:*)",
+      "Bash(python3:*)",
+      "Bash(break)",
+      "Bash(fi)",
+      "Bash(done)",
+      "WebFetch(domain:docs.fastpix.io)",
+      "WebFetch(domain:docs.gumlet.com)",
+      "WebFetch(domain:docs.api.video)",
+      "WebSearch"
+    ]
+  }
+}
