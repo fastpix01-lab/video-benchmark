@@ -2,7 +2,6 @@
 
 import { useState, useRef, useCallback } from "react";
 import Hls from "hls.js";
-import { Uploader } from "@fastpix/resumable-uploads";
 import type {
   ProviderMetrics,
   BenchmarkRun,
@@ -218,38 +217,54 @@ export function useBenchmark() {
   async function performUpload(info: CreateUploadResult, file: File) {
     const { upload } = info;
 
-    if (upload.sdkUpload) {
-      try {
-        await new Promise<void>((resolve, reject) => {
-          try {
-            const uploader = Uploader.init({
-              endpoint: upload.url,
-              file,
-              chunkSize: 16 * 1024,
-            });
+    // Chunked upload through server-side tus proxy (bypasses CORS)
+    if (upload.tusProxy) {
+      const TUS_CHUNK = 4 * 1024 * 1024; // 4 MB — under Vercel's 4.5 MB body limit
+      let offset = 0;
 
-            uploader.on("success", () => resolve());
-            uploader.on("error", (event) => {
-              reject(new Error(`FastPix SDK upload error: ${event.detail.message || "unknown"}`));
-            });
-          } catch (err) {
-            reject(new Error(`FastPix SDK init failed: ${err instanceof Error ? err.message : "unknown"}`));
-          }
-        });
-        return;
-      } catch {
-        // SDK failed — fall back to direct PUT upload
-        const res = await fetch(upload.url, {
-          method: "PUT",
-          body: file,
-          headers: { "Content-Type": file.type || "video/mp4" },
-        });
-        if (!res.ok) {
-          const errBody = await res.text().catch(() => "");
-          throw new Error(`Upload failed (${res.status}): ${errBody}`);
+      // Send POST to initialize tus upload with file length
+      const initRes = await fetch("/api/providers/fastpix/tus-proxy", {
+        method: "POST",
+        headers: {
+          "x-upload-url": upload.url,
+          "upload-length": file.size.toString(),
+        },
+      });
+      if (!initRes.ok) {
+        const body = await initRes.json().catch(() => ({}));
+        // If POST fails (e.g. 405), proceed directly with PATCH — some tus servers
+        // accept PATCH from offset 0 without a creation step
+        if (initRes.status !== 405) {
+          console.warn(`Tus init returned ${initRes.status}, proceeding with PATCH`);
         }
-        return;
       }
+
+      while (offset < file.size) {
+        if (abortRef.current) throw new Error("Cancelled");
+
+        const end = Math.min(offset + TUS_CHUNK, file.size);
+        const chunk = file.slice(offset, end);
+
+        const res = await fetch("/api/providers/fastpix/tus-proxy", {
+          method: "PATCH",
+          headers: {
+            "x-upload-url": upload.url,
+            "upload-offset": offset.toString(),
+            "content-type": "application/offset+octet-stream",
+          },
+          body: chunk,
+        });
+
+        if (!res.ok) {
+          const body = await res.json().catch(() => ({}));
+          throw new Error(body.error || `Chunk upload failed at offset ${offset}`);
+        }
+
+        const data = await res.json();
+        offset = parseInt(data.offset, 10) || end;
+      }
+
+      return;
     }
 
     if (upload.bodyType === "raw") {

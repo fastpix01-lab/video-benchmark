@@ -48,7 +48,7 @@ export const fastpixProvider: VideoProvider = {
         url: signedUrl,
         method: "PUT" as const,
         bodyType: "raw" as const,
-        sdkUpload: true,
+        tusProxy: true,
       },
     };
   },

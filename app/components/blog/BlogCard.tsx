@@ -1,5 +1,6 @@
 import Link from "next/link";
 import type { BlogPost } from "@/lib/blog";
+import { LINKEDIN_URL } from "@/app/components/AuthorLink";
 
 export default function BlogCard({ post, featured = false }: { post: BlogPost; featured?: boolean }) {
   if (featured) {
@@ -25,8 +26,6 @@ export default function BlogCard({ post, featured = false }: { post: BlogPost; f
             <time>{post.date}</time>
             <span className="w-1 h-1 rounded-full bg-zinc-300 dark:bg-zinc-600" />
             <span>{post.readingTime}</span>
-            <span className="w-1 h-1 rounded-full bg-zinc-300 dark:bg-zinc-600" />
-            <span>{post.author}</span>
           </div>
           <h3 className="text-xl sm:text-2xl font-bold text-zinc-900 dark:text-zinc-100 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors duration-200 mb-3">
             {post.title}
@@ -34,11 +33,16 @@ export default function BlogCard({ post, featured = false }: { post: BlogPost; f
           <p className="text-sm text-zinc-600 dark:text-zinc-400 leading-relaxed line-clamp-2">
             {post.excerpt}
           </p>
-          <div className="mt-4 inline-flex items-center text-sm font-medium text-blue-600 dark:text-blue-400 group-hover:gap-2 gap-1.5 transition-all duration-200">
-            Read article
-            <svg className="w-4 h-4 transition-transform duration-200 group-hover:translate-x-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
-            </svg>
+          <div className="mt-4 flex items-center justify-between">
+            <span className="text-xs text-zinc-500 dark:text-zinc-400">
+              {post.author}
+            </span>
+            <span className="inline-flex items-center text-sm font-medium text-blue-600 dark:text-blue-400 group-hover:gap-2 gap-1.5 transition-all duration-200">
+              Read article
+              <svg className="w-4 h-4 transition-transform duration-200 group-hover:translate-x-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
+              </svg>
+            </span>
           </div>
         </div>
       </Link>

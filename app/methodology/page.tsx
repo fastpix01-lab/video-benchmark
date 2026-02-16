@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { LINKEDIN_URL } from "@/app/components/AuthorLink";
 
 export const metadata: Metadata = {
   title: "How We Test — StreamBench",
@@ -199,6 +200,30 @@ export default function HowWeTestPage() {
                 </div>
               </div>
             ))}
+          </div>
+        </section>
+
+        {/* Author */}
+        <section>
+          <div className="rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-6 sm:p-8">
+            <div className="flex items-center gap-4">
+              <div className="w-11 h-11 rounded-full bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center text-sm font-bold text-zinc-500 dark:text-zinc-400 flex-shrink-0">
+                KP
+              </div>
+              <div>
+                <a
+                  href={LINKEDIN_URL}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-sm font-medium text-zinc-900 dark:text-zinc-100 hover:text-blue-600 dark:hover:text-blue-400 hover:underline underline-offset-2 transition-colors duration-150"
+                >
+                  Kalyan Pilli
+                </a>
+                <p className="text-xs text-zinc-500 dark:text-zinc-400">
+                  SDET &middot; Video Infrastructure Benchmarking
+                </p>
+              </div>
+            </div>
           </div>
         </section>
 

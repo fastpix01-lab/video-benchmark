@@ -1,5 +1,6 @@
 import Link from "next/link";
 import Logo from "./Logo";
+import { LINKEDIN_URL } from "./AuthorLink";
 
 export default function Footer() {
   return (
@@ -24,6 +25,7 @@ export default function Footer() {
                 { href: "/benchmark", label: "Run Benchmark" },
                 { href: "/methodology", label: "How We Test" },
                 { href: "/blog", label: "Blog" },
+                { href: "/about", label: "About" },
               ].map((link) => (
                 <li key={link.href}>
                   <Link
@@ -52,9 +54,21 @@ export default function Footer() {
           </div>
         </div>
 
-        <div className="mt-8 pt-8 border-t border-zinc-200 dark:border-zinc-800">
-          <p className="text-xs text-zinc-400 dark:text-zinc-600 text-center">
-            StreamBench — Open-source video infrastructure benchmarking
+        <div className="mt-8 pt-8 border-t border-zinc-200 dark:border-zinc-800 text-center space-y-1">
+          <p className="text-xs text-zinc-400 dark:text-zinc-600">
+            &copy; {new Date().getFullYear()} StreamBench
+          </p>
+          <p className="text-xs text-zinc-400 dark:text-zinc-600">
+            An independent benchmarking project by{" "}
+            <a
+              href={LINKEDIN_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="hover:text-zinc-600 dark:hover:text-zinc-400 hover:underline underline-offset-2 transition-colors duration-150"
+            >
+              Kalyan Pilli
+            </a>{" "}
+            (SDET)
           </p>
         </div>
       </div>

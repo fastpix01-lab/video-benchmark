@@ -4,6 +4,7 @@ import Link from "next/link";
 import { getPost, getAllSlugs, getRelatedPosts } from "@/lib/blog";
 import BlogCard from "@/app/components/blog/BlogCard";
 import ScrollProgress from "@/app/components/blog/ScrollProgress";
+import { LINKEDIN_URL } from "@/app/components/AuthorLink";
 import FastPixVsMux from "@/app/components/blog/posts/fastpix-vs-mux";
 import StartupTimeMatters from "@/app/components/blog/posts/startup-time-matters";
 import CloudinaryApiVideoGumlet from "@/app/components/blog/posts/cloudinary-apivideo-gumlet";
@@ -84,13 +85,22 @@ export default async function BlogPostPage({
             </p>
 
             <div className="flex items-center gap-3 text-sm text-white/60">
-              {/* Author avatar placeholder */}
-              <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center text-white text-xs font-bold">
-                SB
+              <div className="w-9 h-9 rounded-full bg-white/20 flex items-center justify-center text-white text-xs font-bold">
+                KP
               </div>
               <div>
-                <p className="text-white/90 font-medium">{post.author}</p>
-                <p>
+                <a
+                  href={LINKEDIN_URL}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-white/90 font-medium hover:text-white hover:underline underline-offset-2 transition-colors duration-150"
+                >
+                  {post.author}
+                </a>
+                <p className="text-white/60 text-xs">
+                  SDET &middot; Video Infrastructure Benchmarking
+                </p>
+                <p className="mt-0.5">
                   <time>{post.date}</time>
                   <span className="mx-1.5">&middot;</span>
                   <span>{post.readingTime}</span>

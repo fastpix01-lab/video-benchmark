@@ -11,6 +11,7 @@ const NAV_LINKS = [
   { href: "/benchmark", label: "Benchmark" },
   { href: "/methodology", label: "How We Test" },
   { href: "/blog", label: "Blog" },
+  { href: "/about", label: "About" },
 ];
 
 export default function Navbar() {

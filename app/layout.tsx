@@ -22,7 +22,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: "StreamBench — Video Infrastructure Benchmarking",
     description:
-      "Compare upload speed, processing time, and startup latency across 5 leading video providers.",
+      "Compare upload speed, processing time, and startup latency across leading video providers.",
     type: "website",
   },
 };

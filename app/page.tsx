@@ -52,7 +52,7 @@ export default function LandingPage() {
               </span>
             </h1>
             <p className="mt-6 text-lg sm:text-xl text-zinc-600 dark:text-zinc-400 max-w-2xl mx-auto">
-              Upload your video and compare upload speed, processing time, and startup latency across 5 leading providers — in one click.
+              Upload your video and compare upload speed, processing time, and startup latency across leading providers in one click.
             </p>
             <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-4">
               <Link
@@ -68,7 +68,7 @@ export default function LandingPage() {
                 href="/methodology"
                 className="inline-flex items-center rounded-lg border border-zinc-300 dark:border-zinc-700 px-6 py-3 text-sm font-semibold text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors"
               >
-                How We Test
+                View Methodology
               </Link>
             </div>
           </AnimatedSection>
