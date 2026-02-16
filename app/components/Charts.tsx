@@ -20,6 +20,8 @@ export default function Charts({ results }: ChartsProps) {
   const successful = results.filter((r) => r.status === "success");
   if (successful.length === 0) return null;
 
+  const hasAdvanced = successful.some((r) => r.advanced);
+
   const data = successful.map((r) => ({
     name: r.providerName,
     Upload: +(r.uploadMs / 1000).toFixed(2),
@@ -27,6 +29,16 @@ export default function Charts({ results }: ChartsProps) {
     Startup: +(r.startupMs / 1000).toFixed(2),
     Total: +(r.totalMs / 1000).toFixed(2),
   }));
+
+  const throttledData = hasAdvanced
+    ? successful
+        .filter((r) => r.advanced)
+        .map((r) => ({
+          name: r.providerName,
+          "Normal Startup": +(r.startupMs / 1000).toFixed(2),
+          "Throttled Startup": +(r.advanced!.throttledStartupMs / 1000).toFixed(2),
+        }))
+    : [];
 
   const fastest = {
     upload: successful.reduce((a, b) => (a.uploadMs < b.uploadMs ? a : b)),
@@ -103,6 +115,33 @@ export default function Charts({ results }: ChartsProps) {
           </BarChart>
         </ResponsiveContainer>
       </div>
+
+      {/* Throttled vs Normal Startup */}
+      {hasAdvanced && throttledData.length > 0 && (
+        <div className="rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-4">
+          <h3 className="text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-4">
+            Throttled vs Normal Startup (seconds)
+          </h3>
+          <ResponsiveContainer width="100%" height={300}>
+            <BarChart data={throttledData}>
+              <CartesianGrid strokeDasharray="3 3" className="[&>line]:stroke-zinc-200 dark:[&>line]:stroke-zinc-700" stroke="#3f3f46" />
+              <XAxis dataKey="name" tick={{ fontSize: 12, fill: "#a1a1aa" }} />
+              <YAxis tick={{ fontSize: 12, fill: "#a1a1aa" }} />
+              <Tooltip
+                contentStyle={{
+                  backgroundColor: "var(--background)",
+                  border: "1px solid #3f3f46",
+                  borderRadius: 8,
+                  color: "var(--foreground)",
+                }}
+              />
+              <Legend />
+              <Bar dataKey="Normal Startup" fill="#3b82f6" radius={[2, 2, 0, 0]} />
+              <Bar dataKey="Throttled Startup" fill="#f97316" radius={[2, 2, 0, 0]} />
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+      )}
     </div>
   );
 }

@@ -45,7 +45,7 @@ export default function Footer() {
               Providers Tested
             </h3>
             <ul className="space-y-2">
-              {["Mux", "FastPix", "api.video", "Cloudinary", "Gumlet"].map((name) => (
+              {["Mux", "FastPix", "api.video", "Cloudinary", "Gumlet", "Vimeo"].map((name) => (
                 <li key={name} className="text-sm text-zinc-500 dark:text-zinc-400">
                   {name}
                 </li>

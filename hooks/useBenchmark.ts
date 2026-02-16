@@ -5,11 +5,12 @@ import Hls from "hls.js";
 import { Uploader } from "@fastpix/resumable-uploads";
 import type {
   ProviderMetrics,
+  AdvancedMetrics,
   BenchmarkRun,
   CreateUploadResult,
   StatusResult,
 } from "@/lib/providers/types";
-import { PROVIDERS, DEFAULT_ENABLED, MAX_RETRIES, POLL_INTERVAL, POLL_TIMEOUT } from "@/lib/constants";
+import { PROVIDERS, DEFAULT_ENABLED, MAX_RETRIES, POLL_INTERVAL, POLL_TIMEOUT, NETWORK_PRESETS, ADVANCED_PLAYBACK_DURATION } from "@/lib/constants";
 
 export type Step = "uploading" | "processing" | "measuring";
 
@@ -31,6 +32,8 @@ export function useBenchmark() {
   const [progress, setProgress] = useState<Progress | null>(null);
   const [runs, setRuns] = useState<BenchmarkRun[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [advancedEnabled, setAdvancedEnabled] = useState(false);
+  const [networkPreset, setNetworkPreset] = useState<"3g" | "2g">("3g");
 
   const videoRef = useRef<HTMLVideoElement>(null);
   const hlsRef = useRef<Hls | null>(null);
@@ -193,6 +196,19 @@ export function useBenchmark() {
         if (!video) throw new Error("Video element missing");
         const startupMs = await measureStartupTime(video, status.playbackUrl);
 
+        let advanced: AdvancedMetrics | undefined;
+        if (advancedEnabled) {
+          setProgress({
+            fileIndex,
+            fileName: file.name,
+            providerSlug: slug,
+            providerName: name,
+            step: "measuring",
+            detail: "Running advanced metrics...",
+          });
+          advanced = await measureAdvancedMetrics(video, status.playbackUrl, NETWORK_PRESETS[networkPreset]);
+        }
+
         const totalMs = Math.round(performance.now() - totalStart);
 
         return {
@@ -204,6 +220,7 @@ export function useBenchmark() {
           totalMs,
           playbackUrl: status.playbackUrl,
           status: "success",
+          advanced,
         };
       } catch (err) {
         if (attempt === MAX_RETRIES) {
@@ -404,6 +421,151 @@ export function useBenchmark() {
     });
   }
 
+  // ── Advanced Metrics Measurement ─────────────────────────────────
+
+  async function measureAdvancedMetrics(
+    video: HTMLVideoElement,
+    playbackUrl: string,
+    preset: { label: string; maxBandwidthKbps: number }
+  ): Promise<AdvancedMetrics> {
+    // Clean up any existing HLS instance
+    if (hlsRef.current) {
+      hlsRef.current.destroy();
+      hlsRef.current = null;
+    }
+
+    video.pause();
+    video.removeAttribute("src");
+    video.load();
+    video.muted = true;
+    video.playsInline = true;
+
+    return new Promise<AdvancedMetrics>((resolve, reject) => {
+      if (!Hls.isSupported()) {
+        reject(new Error("HLS not supported for advanced metrics"));
+        return;
+      }
+
+      const hls = new Hls({
+        maxMaxBufferLength: 30,
+        capLevelToPlayerSize: false,
+        // Cap bandwidth estimate at ABR level (HLS.js uses bits/sec)
+        abrEwmaDefaultEstimate: preset.maxBandwidthKbps * 1000,
+        abrEwmaDefaultEstimateMax: preset.maxBandwidthKbps * 1000,
+      });
+
+      let throttledStartupMs = 0;
+      let rebufferCount = 0;
+      let rebufferDurationMs = 0;
+      let rebufferStart: number | null = null;
+      let levelSwitchCount = 0;
+      const bitrates: number[] = [];
+      let playbackStarted = false;
+
+      const timeout = setTimeout(() => {
+        cleanup();
+        reject(new Error("Advanced metrics timed out (45s)"));
+      }, 45000);
+
+      function cleanup() {
+        clearTimeout(timeout);
+        video.removeEventListener("waiting", onWaiting);
+        video.removeEventListener("playing", onPlayingDuringObservation);
+        hls.destroy();
+      }
+
+      function onWaiting() {
+        if (playbackStarted) {
+          rebufferCount++;
+          rebufferStart = performance.now();
+        }
+      }
+
+      function onPlayingDuringObservation() {
+        if (rebufferStart !== null) {
+          rebufferDurationMs += performance.now() - rebufferStart;
+          rebufferStart = null;
+        }
+      }
+
+      hls.on(Hls.Events.ERROR, (_e, d) => {
+        if (d.fatal) {
+          cleanup();
+          reject(new Error(`HLS error during advanced metrics: ${d.details}`));
+        }
+      });
+
+      hls.on(Hls.Events.FRAG_LOADED, (_e, d) => {
+        const bytes = d.frag.stats.total;
+        const loadTimeMs = d.frag.stats.loading.end - d.frag.stats.loading.start;
+        if (loadTimeMs > 0 && bytes > 0) {
+          const bitrateKbps = (bytes * 8) / loadTimeMs; // bits/ms = Kbps
+          bitrates.push(bitrateKbps);
+        }
+      });
+
+      hls.on(Hls.Events.LEVEL_SWITCHED, () => {
+        levelSwitchCount++;
+      });
+
+      hls.loadSource(playbackUrl);
+      hls.attachMedia(video);
+
+      hls.on(Hls.Events.MANIFEST_PARSED, () => {
+        // Phase 1: Measure throttled TTFF
+        const ttffStart = performance.now();
+        video.addEventListener("playing", function onFirstPlay() {
+          video.removeEventListener("playing", onFirstPlay);
+          throttledStartupMs = Math.round(performance.now() - ttffStart);
+          playbackStarted = true;
+
+          // Phase 2: Observe playback for ADVANCED_PLAYBACK_DURATION
+          video.addEventListener("waiting", onWaiting);
+          video.addEventListener("playing", onPlayingDuringObservation);
+
+          setTimeout(() => {
+            // Close any open rebuffer window
+            if (rebufferStart !== null) {
+              rebufferDurationMs += performance.now() - rebufferStart;
+              rebufferStart = null;
+            }
+
+            const playbackDurationMs = ADVANCED_PLAYBACK_DURATION;
+            const rebufferRatio = playbackDurationMs > 0 ? rebufferDurationMs / playbackDurationMs : 0;
+            const averageBitrateKbps = bitrates.length > 0
+              ? Math.round(bitrates.reduce((a, b) => a + b, 0) / bitrates.length)
+              : 0;
+            const peakBitrateKbps = bitrates.length > 0
+              ? Math.round(Math.max(...bitrates))
+              : 0;
+            const smoothnessScore = Math.max(0, Math.round(100 - rebufferCount * 15 - levelSwitchCount * 5));
+
+            cleanup();
+
+            resolve({
+              throttledStartupMs,
+              networkPreset: networkPreset,
+              maxBandwidthKbps: preset.maxBandwidthKbps,
+              rebufferCount,
+              rebufferDurationMs: Math.round(rebufferDurationMs),
+              rebufferRatio: +rebufferRatio.toFixed(4),
+              averageBitrateKbps,
+              peakBitrateKbps,
+              smoothnessScore,
+              levelSwitchCount,
+              playbackDurationMs,
+            });
+          }, ADVANCED_PLAYBACK_DURATION);
+        }, { once: true });
+
+        video.play().catch((e) => {
+          cleanup();
+          reject(e);
+        });
+      });
+    });
+  }
+
   // ── Aggregated results ────────────────────────────────────────────
 
   function aggregateResults(): ProviderMetrics[] {
@@ -418,15 +580,36 @@ export function useBenchmark() {
 
     return Array.from(byProvider.entries()).map(([, results]) => {
       const n = results.length;
+      const avg = (fn: (r: ProviderMetrics) => number) =>
+        Math.round(results.reduce((s, r) => s + fn(r), 0) / n);
+
+      const hasAdvanced = results.every((r) => r.advanced);
+      const advanced: AdvancedMetrics | undefined = hasAdvanced
+        ? {
+            throttledStartupMs: avg((r) => r.advanced!.throttledStartupMs),
+            networkPreset: results[0].advanced!.networkPreset,
+            maxBandwidthKbps: results[0].advanced!.maxBandwidthKbps,
+            rebufferCount: avg((r) => r.advanced!.rebufferCount),
+            rebufferDurationMs: avg((r) => r.advanced!.rebufferDurationMs),
+            rebufferRatio: +(results.reduce((s, r) => s + r.advanced!.rebufferRatio, 0) / n).toFixed(4),
+            averageBitrateKbps: avg((r) => r.advanced!.averageBitrateKbps),
+            peakBitrateKbps: avg((r) => r.advanced!.peakBitrateKbps),
+            smoothnessScore: avg((r) => r.advanced!.smoothnessScore),
+            levelSwitchCount: avg((r) => r.advanced!.levelSwitchCount),
+            playbackDurationMs: avg((r) => r.advanced!.playbackDurationMs),
+          }
+        : undefined;
+
       return {
         provider: results[0].provider,
         providerName: results[0].providerName,
-        uploadMs: Math.round(results.reduce((s, r) => s + r.uploadMs, 0) / n),
-        processingMs: Math.round(results.reduce((s, r) => s + r.processingMs, 0) / n),
-        startupMs: Math.round(results.reduce((s, r) => s + r.startupMs, 0) / n),
-        totalMs: Math.round(results.reduce((s, r) => s + r.totalMs, 0) / n),
+        uploadMs: avg((r) => r.uploadMs),
+        processingMs: avg((r) => r.processingMs),
+        startupMs: avg((r) => r.startupMs),
+        totalMs: avg((r) => r.totalMs),
         playbackUrl: results[0].playbackUrl,
         status: "success" as const,
+        advanced,
       };
     });
   }
@@ -450,5 +633,9 @@ export function useBenchmark() {
     videoRef,
     runBenchmark,
     reset,
+    advancedEnabled,
+    setAdvancedEnabled,
+    networkPreset,
+    setNetworkPreset,
   };
 }

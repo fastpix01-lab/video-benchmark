@@ -5,6 +5,7 @@ import { fastpixProvider } from "./fastpix";
 import { apiVideoProvider } from "./apivideo";
 import { cloudinaryProvider } from "./cloudinary";
 import { gumletProvider } from "./gumlet";
+import { vimeoProvider } from "./vimeo";
 
 const providers: Record<string, VideoProvider> = {
   mux: muxProvider,
@@ -12,6 +13,7 @@ const providers: Record<string, VideoProvider> = {
   apivideo: apiVideoProvider,
   cloudinary: cloudinaryProvider,
   gumlet: gumletProvider,
+  vimeo: vimeoProvider,
 };
 
 export function getProvider(slug: string): VideoProvider | undefined {

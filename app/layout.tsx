@@ -18,7 +18,7 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "StreamBench — Video Infrastructure Benchmarking",
   description:
-    "Compare upload speed, processing time, and startup latency across Mux, FastPix, api.video, Cloudinary, and Gumlet.",
+    "Compare upload speed, processing time, and startup latency across Mux, FastPix, api.video, Cloudinary, Gumlet, and Vimeo.",
   openGraph: {
     title: "StreamBench — Video Infrastructure Benchmarking",
     description:

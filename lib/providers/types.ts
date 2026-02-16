@@ -30,6 +30,20 @@ export interface VideoProvider {
   checkStatus(trackingId: string): Promise<StatusResult>;
 }
 
+export interface AdvancedMetrics {
+  throttledStartupMs: number;
+  networkPreset: string;
+  maxBandwidthKbps: number;
+  rebufferCount: number;
+  rebufferDurationMs: number;
+  rebufferRatio: number;
+  averageBitrateKbps: number;
+  peakBitrateKbps: number;
+  smoothnessScore: number;
+  levelSwitchCount: number;
+  playbackDurationMs: number;
+}
+
 export interface ProviderMetrics {
   provider: string;
   providerName: string;
@@ -40,6 +54,7 @@ export interface ProviderMetrics {
   playbackUrl: string;
   status: "success" | "failed";
   error?: string;
+  advanced?: AdvancedMetrics;
 }
 
 export interface BenchmarkRun {

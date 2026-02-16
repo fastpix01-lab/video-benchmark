@@ -4,7 +4,7 @@ import AnimatedSection from "./components/AnimatedSection";
 const FEATURES = [
   {
     title: "Multi-Provider",
-    description: "Benchmark Mux, FastPix, api.video, Cloudinary, and Gumlet side by side.",
+    description: "Benchmark Mux, FastPix, api.video, Cloudinary, Gumlet, and Vimeo side by side.",
     icon: (
       <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
         <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6A2.25 2.25 0 016 3.75h2.25A2.25 2.25 0 0110.5 6v2.25a2.25 2.25 0 01-2.25 2.25H6a2.25 2.25 0 01-2.25-2.25V6zM3.75 15.75A2.25 2.25 0 016 13.5h2.25a2.25 2.25 0 012.25 2.25V18a2.25 2.25 0 01-2.25 2.25H6A2.25 2.25 0 013.75 18v-2.25zM13.5 6a2.25 2.25 0 012.25-2.25H18A2.25 2.25 0 0120.25 6v2.25A2.25 2.25 0 0118 10.5h-2.25a2.25 2.25 0 01-2.25-2.25V6zM13.5 15.75a2.25 2.25 0 012.25-2.25H18a2.25 2.25 0 012.25 2.25V18A2.25 2.25 0 0118 20.25h-2.25A2.25 2.25 0 0113.5 18v-2.25z" />
@@ -79,7 +79,7 @@ export default function LandingPage() {
       <section className="border-y border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900/50">
         <div className="mx-auto max-w-6xl px-4 sm:px-6 py-6">
           <div className="flex flex-wrap items-center justify-center gap-8 sm:gap-12">
-            {["Mux", "FastPix", "api.video", "Cloudinary", "Gumlet"].map((name) => (
+            {["Mux", "FastPix", "api.video", "Cloudinary", "Gumlet", "Vimeo"].map((name) => (
               <span
                 key={name}
                 className="text-sm font-semibold text-zinc-400 dark:text-zinc-500 tracking-wide uppercase"
@@ -160,7 +160,7 @@ export default function LandingPage() {
               Ready to benchmark?
             </h2>
             <p className="text-zinc-600 dark:text-zinc-400 mb-8 max-w-lg mx-auto">
-              Upload your video and get real performance data across all 5 providers in minutes.
+              Upload your video and get real performance data across all 6 providers in minutes.
             </p>
             <Link
               href="/benchmark"

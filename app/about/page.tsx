@@ -95,7 +95,7 @@ export default function AboutPage() {
           </p>
           <div className="rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-6 sm:p-8">
             <div className="flex flex-wrap gap-3">
-              {["Mux", "FastPix", "api.video", "Cloudinary", "Gumlet"].map((name) => (
+              {["Mux", "FastPix", "api.video", "Cloudinary", "Gumlet", "Vimeo"].map((name) => (
                 <span
                   key={name}
                   className="inline-flex items-center px-3 py-1.5 rounded-lg bg-zinc-100 dark:bg-zinc-800 text-sm font-medium text-zinc-700 dark:text-zinc-300"

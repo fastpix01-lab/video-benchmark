@@ -35,11 +35,13 @@ export const fastpixProvider: VideoProvider = {
       throw new Error(`FastPix upload create failed (${res.status}): ${body}`);
     }
     const json = await res.json();
-    const mediaId = json.data.uploadId;
+    // The upload endpoint returns both 'id' (media ID) and 'uploadId' (upload session ID).
+    // Use 'id' for status polling as it is the media identifier recognized by GET /v1/on-demand/{mediaId}.
+    const mediaId = json.data.id || json.data.uploadId;
     const signedUrl = json.data.url;
 
     if (!mediaId) {
-      throw new Error(`FastPix upload response missing data.uploadId. Got keys: ${Object.keys(json.data).join(", ")}`);
+      throw new Error(`FastPix upload response missing data.id and data.uploadId. Got keys: ${Object.keys(json.data).join(", ")}`);
     }
 
     return {
@@ -63,6 +65,11 @@ export const fastpixProvider: VideoProvider = {
       },
     });
     if (!res.ok) {
+      // FastPix may return 404 briefly after upload while the media record is being created.
+      // Return not-ready so the poller retries instead of throwing.
+      if (res.status === 404) {
+        return { ready: false, failed: false, playbackUrl: null };
+      }
       const body = await res.text().catch(() => "");
       throw new Error(`FastPix status check failed (${res.status}): ${body}`);
     }

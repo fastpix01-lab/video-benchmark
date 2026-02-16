@@ -1,12 +1,27 @@
 import type { BenchmarkRun } from "@/lib/providers/types";
 
 export function generateCsvContent(runs: BenchmarkRun[]): string {
-  const rows = [
-    ["File", "Provider", "Upload (ms)", "Processing (ms)", "Startup (ms)", "Total (ms)", "Status", "Error"],
+  const hasAdvanced = runs.some((run) =>
+    run.results.some((r) => r.advanced)
+  );
+
+  const headers = [
+    "File", "Provider", "Upload (ms)", "Processing (ms)", "Startup (ms)", "Total (ms)", "Status", "Error",
   ];
+  if (hasAdvanced) {
+    headers.push(
+      "Throttled Startup (ms)",
+      "Rebuffer Count",
+      "Rebuffer Duration (ms)",
+      "Avg Bitrate (Kbps)",
+      "Smoothness Score"
+    );
+  }
+
+  const rows = [headers];
   for (const run of runs) {
     for (const r of run.results) {
-      rows.push([
+      const row = [
         run.fileName,
         r.providerName,
         String(r.uploadMs),
@@ -15,7 +30,21 @@ export function generateCsvContent(runs: BenchmarkRun[]): string {
         String(r.totalMs),
         r.status,
         r.error || "",
-      ]);
+      ];
+      if (hasAdvanced) {
+        if (r.advanced) {
+          row.push(
+            String(r.advanced.throttledStartupMs),
+            String(r.advanced.rebufferCount),
+            String(r.advanced.rebufferDurationMs),
+            String(r.advanced.averageBitrateKbps),
+            String(r.advanced.smoothnessScore)
+          );
+        } else {
+          row.push("", "", "", "", "");
+        }
+      }
+      rows.push(row);
     }
   }
   return rows.map((r) => r.map((c) => `"${c}"`).join(",")).join("\n");
@@ -47,6 +76,7 @@ export function downloadJson(runs: BenchmarkRun[]) {
         totalMs: r.totalMs,
         status: r.status,
         error: r.error || undefined,
+        advanced: r.advanced || undefined,
       })),
     })),
   };
