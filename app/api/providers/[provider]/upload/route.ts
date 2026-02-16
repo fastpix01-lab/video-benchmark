@@ -12,7 +12,23 @@ export async function POST(
       return NextResponse.json({ error: `Unknown provider: ${slug}` }, { status: 404 });
     }
 
-    const origin = req.headers.get("origin") ?? "*";
+    // Prefer the explicit origin sent by the client (reliable on Vercel),
+    // then the Origin header, then the Referer-derived origin as last resort.
+    let origin = "*";
+    try {
+      const body = await req.json();
+      if (body.origin) origin = body.origin;
+    } catch {
+      // No JSON body — fall back to headers
+    }
+    if (origin === "*") {
+      origin =
+        req.headers.get("origin") ??
+        (req.headers.get("referer")
+          ? new URL(req.headers.get("referer")!).origin
+          : "*");
+    }
+
     const result = await provider.createUpload(origin);
     return NextResponse.json(result);
   } catch (err) {

@@ -139,6 +139,8 @@ export function useBenchmark() {
         } else {
           const createRes = await fetch(`/api/providers/${slug}/upload`, {
             method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ origin: window.location.origin }),
           });
           if (!createRes.ok) {
             const body = await createRes.json().catch(() => ({}));
