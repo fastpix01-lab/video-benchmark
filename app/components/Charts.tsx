@@ -62,14 +62,15 @@ export default function Charts({ results }: ChartsProps) {
         </h3>
         <ResponsiveContainer width="100%" height={300}>
           <BarChart data={data}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#333" />
-            <XAxis dataKey="name" tick={{ fontSize: 12 }} />
-            <YAxis tick={{ fontSize: 12 }} />
+            <CartesianGrid strokeDasharray="3 3" className="[&>line]:stroke-zinc-200 dark:[&>line]:stroke-zinc-700" stroke="#3f3f46" />
+            <XAxis dataKey="name" tick={{ fontSize: 12, fill: "#a1a1aa" }} />
+            <YAxis tick={{ fontSize: 12, fill: "#a1a1aa" }} />
             <Tooltip
               contentStyle={{
-                backgroundColor: "#18181b",
+                backgroundColor: "var(--background)",
                 border: "1px solid #3f3f46",
                 borderRadius: 8,
+                color: "var(--foreground)",
               }}
             />
             <Legend />
@@ -87,14 +88,15 @@ export default function Charts({ results }: ChartsProps) {
         </h3>
         <ResponsiveContainer width="100%" height={200}>
           <BarChart data={data} layout="vertical">
-            <CartesianGrid strokeDasharray="3 3" stroke="#333" />
-            <XAxis type="number" tick={{ fontSize: 12 }} />
-            <YAxis dataKey="name" type="category" tick={{ fontSize: 12 }} width={90} />
+            <CartesianGrid strokeDasharray="3 3" className="[&>line]:stroke-zinc-200 dark:[&>line]:stroke-zinc-700" stroke="#3f3f46" />
+            <XAxis type="number" tick={{ fontSize: 12, fill: "#a1a1aa" }} />
+            <YAxis dataKey="name" type="category" tick={{ fontSize: 12, fill: "#a1a1aa" }} width={90} />
             <Tooltip
               contentStyle={{
-                backgroundColor: "#18181b",
+                backgroundColor: "var(--background)",
                 border: "1px solid #3f3f46",
                 borderRadius: 8,
+                color: "var(--foreground)",
               }}
             />
             <Bar dataKey="Total" fill="#8b5cf6" radius={[0, 4, 4, 0]} />

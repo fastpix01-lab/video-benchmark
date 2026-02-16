@@ -1,0 +1,438 @@
+"use client";
+
+import { useState, useRef, useCallback } from "react";
+import Hls from "hls.js";
+import { Uploader } from "@fastpix/resumable-uploads";
+import type {
+  ProviderMetrics,
+  BenchmarkRun,
+  CreateUploadResult,
+  StatusResult,
+} from "@/lib/providers/types";
+import { PROVIDERS, MAX_RETRIES, POLL_INTERVAL, POLL_TIMEOUT } from "@/lib/constants";
+
+export type Step = "uploading" | "processing" | "measuring";
+
+export interface Progress {
+  fileIndex: number;
+  fileName: string;
+  providerSlug: string;
+  providerName: string;
+  step: Step;
+  detail: string;
+}
+
+export function useBenchmark() {
+  const [files, setFiles] = useState<File[]>([]);
+  const [enabled, setEnabled] = useState<Set<string>>(
+    new Set(PROVIDERS.map((p) => p.slug))
+  );
+  const [running, setRunning] = useState(false);
+  const [progress, setProgress] = useState<Progress | null>(null);
+  const [runs, setRuns] = useState<BenchmarkRun[]>([]);
+  const [error, setError] = useState<string | null>(null);
+
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const hlsRef = useRef<Hls | null>(null);
+  const abortRef = useRef(false);
+
+  const reset = useCallback(() => {
+    abortRef.current = true;
+    if (hlsRef.current) {
+      hlsRef.current.destroy();
+      hlsRef.current = null;
+    }
+    setRunning(false);
+    setProgress(null);
+  }, []);
+
+  function toggleProvider(slug: string) {
+    setEnabled((prev) => {
+      const next = new Set(prev);
+      if (next.has(slug)) next.delete(slug);
+      else next.add(slug);
+      return next;
+    });
+  }
+
+  // ── Benchmark Runner ──────────────────────────────────────────────
+
+  async function runBenchmark() {
+    if (files.length === 0 || enabled.size === 0) return;
+    abortRef.current = false;
+    setRunning(true);
+    setError(null);
+    setRuns([]);
+
+    const allRuns: BenchmarkRun[] = [];
+
+    for (let fi = 0; fi < files.length; fi++) {
+      const file = files[fi];
+      const results: ProviderMetrics[] = [];
+
+      for (const p of PROVIDERS) {
+        if (!enabled.has(p.slug)) continue;
+        if (abortRef.current) break;
+
+        const result = await benchmarkProvider(file, fi, p.slug, p.name);
+        results.push(result);
+        const currentRun = { fileName: file.name, fileSize: file.size, results: [...results] };
+        setRuns([...allRuns, currentRun]);
+      }
+
+      allRuns.push({ fileName: file.name, fileSize: file.size, results });
+      setRuns([...allRuns]);
+    }
+
+    setRunning(false);
+    setProgress(null);
+  }
+
+  async function benchmarkProvider(
+    file: File,
+    fileIndex: number,
+    slug: string,
+    name: string
+  ): Promise<ProviderMetrics> {
+    const fail = (err: string): ProviderMetrics => ({
+      provider: slug,
+      providerName: name,
+      uploadMs: 0,
+      processingMs: 0,
+      startupMs: 0,
+      totalMs: 0,
+      playbackUrl: "",
+      status: "failed",
+      error: err,
+    });
+
+    for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+      try {
+        const totalStart = performance.now();
+
+        const providerConfig = PROVIDERS.find((p) => p.slug === slug)!;
+        setProgress({
+          fileIndex,
+          fileName: file.name,
+          providerSlug: slug,
+          providerName: name,
+          step: "uploading",
+          detail: attempt > 0 ? `Retry ${attempt}/${MAX_RETRIES}` : `${(file.size / 1024 / 1024).toFixed(1)} MB`,
+        });
+
+        let trackingId: string;
+        const uploadStart = performance.now();
+
+        if (providerConfig.proxy) {
+          const form = new FormData();
+          form.append("file", file);
+          const proxyRes = await fetch(`/api/providers/${slug}/proxy-upload`, {
+            method: "POST",
+            body: form,
+          });
+          if (!proxyRes.ok) {
+            const body = await proxyRes.json().catch(() => ({}));
+            throw new Error(body.error || `Proxy upload failed (${proxyRes.status})`);
+          }
+          const proxyData = await proxyRes.json();
+          trackingId = proxyData.trackingId;
+        } else {
+          const createRes = await fetch(`/api/providers/${slug}/upload`, {
+            method: "POST",
+          });
+          if (!createRes.ok) {
+            const body = await createRes.json().catch(() => ({}));
+            throw new Error(body.error || `Upload init failed (${createRes.status})`);
+          }
+          const uploadInfo: CreateUploadResult = await createRes.json();
+          trackingId = uploadInfo.trackingId;
+          await performUpload(uploadInfo, file);
+        }
+
+        const uploadMs = Math.round(performance.now() - uploadStart);
+
+        if (abortRef.current) return fail("Cancelled");
+
+        setProgress({
+          fileIndex,
+          fileName: file.name,
+          providerSlug: slug,
+          providerName: name,
+          step: "processing",
+          detail: "Waiting for readiness...",
+        });
+
+        const processStart = performance.now();
+        const status = await pollUntilReady(slug, trackingId, (detail) => {
+          setProgress({
+            fileIndex,
+            fileName: file.name,
+            providerSlug: slug,
+            providerName: name,
+            step: "processing",
+            detail,
+          });
+        });
+        const processingMs = Math.round(performance.now() - processStart);
+
+        if (!status.playbackUrl) throw new Error("No playback URL returned");
+        if (abortRef.current) return fail("Cancelled");
+
+        setProgress({
+          fileIndex,
+          fileName: file.name,
+          providerSlug: slug,
+          providerName: name,
+          step: "measuring",
+          detail: "Measuring first-frame latency...",
+        });
+
+        const video = videoRef.current;
+        if (!video) throw new Error("Video element missing");
+        const startupMs = await measureStartupTime(video, status.playbackUrl);
+
+        const totalMs = Math.round(performance.now() - totalStart);
+
+        return {
+          provider: slug,
+          providerName: name,
+          uploadMs,
+          processingMs,
+          startupMs,
+          totalMs,
+          playbackUrl: status.playbackUrl,
+          status: "success",
+        };
+      } catch (err) {
+        if (attempt === MAX_RETRIES) {
+          return fail(err instanceof Error ? err.message : "Unknown error");
+        }
+      }
+    }
+
+    return fail("Max retries exceeded");
+  }
+
+  // ── Upload ────────────────────────────────────────────────────────
+
+  async function performUpload(info: CreateUploadResult, file: File) {
+    const { upload } = info;
+
+    if (upload.sdkUpload) {
+      return new Promise<void>((resolve, reject) => {
+        try {
+          const uploader = Uploader.init({
+            endpoint: upload.url,
+            file,
+            chunkSize: 16 * 1024,
+          });
+
+          uploader.on("success", () => resolve());
+          uploader.on("error", (event) => {
+            reject(new Error(`FastPix SDK upload error: ${event.detail.message || "unknown"}`));
+          });
+        } catch (err) {
+          reject(new Error(`FastPix SDK init failed: ${err instanceof Error ? err.message : "unknown"}`));
+        }
+      });
+    }
+
+    if (upload.bodyType === "raw") {
+      const headers: Record<string, string> = {
+        "Content-Type": file.type || "video/mp4",
+      };
+      if (upload.headers) {
+        Object.assign(headers, upload.headers);
+      }
+      const res = await fetch(upload.url, {
+        method: upload.method,
+        body: file,
+        headers,
+      });
+      if (!res.ok) {
+        const errBody = await res.text().catch(() => "");
+        throw new Error(`Upload failed (${res.status}): ${errBody}`);
+      }
+    } else {
+      const form = new FormData();
+      form.append(upload.formField || "file", file);
+      if (upload.extraFormFields) {
+        for (const [k, v] of Object.entries(upload.extraFormFields)) {
+          form.append(k, v);
+        }
+      }
+      const headers: Record<string, string> = {};
+      if (upload.headers) {
+        for (const [k, v] of Object.entries(upload.headers)) {
+          if (k.toLowerCase() !== "content-type") headers[k] = v;
+        }
+      }
+      const res = await fetch(upload.url, {
+        method: upload.method,
+        body: form,
+        headers,
+      });
+      if (!res.ok) {
+        const errBody = await res.text().catch(() => "");
+        throw new Error(`Upload failed (${res.status}): ${errBody}`);
+      }
+    }
+  }
+
+  // ── Polling ───────────────────────────────────────────────────────
+
+  async function pollUntilReady(
+    slug: string,
+    trackingId: string,
+    onUpdate: (detail: string) => void
+  ): Promise<StatusResult> {
+    const deadline = Date.now() + POLL_TIMEOUT;
+    let poll = 0;
+
+    while (Date.now() < deadline) {
+      if (abortRef.current) throw new Error("Cancelled");
+      poll++;
+
+      const res = await fetch(`/api/providers/${slug}/status/${trackingId}`);
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(body.error || `Status poll failed (${res.status})`);
+      }
+      const data: StatusResult = await res.json();
+
+      if (data.ready) return data;
+      if (data.failed) throw new Error(data.error || "Processing failed");
+
+      onUpdate(`Poll ${poll}...`);
+      await new Promise((r) => setTimeout(r, POLL_INTERVAL));
+    }
+
+    throw new Error("Timed out waiting for readiness");
+  }
+
+  // ── Startup Measurement ───────────────────────────────────────────
+
+  async function measureStartupTime(
+    video: HTMLVideoElement,
+    playbackUrl: string
+  ): Promise<number> {
+    if (hlsRef.current) {
+      hlsRef.current.destroy();
+      hlsRef.current = null;
+    }
+
+    video.pause();
+    video.removeAttribute("src");
+    video.load();
+    video.muted = true;
+    video.playsInline = true;
+
+    return new Promise<number>((resolve, reject) => {
+      const timeout = setTimeout(
+        () => reject(new Error("Startup timed out (30s)")),
+        30000
+      );
+
+      function cleanup() {
+        clearTimeout(timeout);
+      }
+
+      function onPlaying(start: number) {
+        return () => {
+          cleanup();
+          resolve(Math.round(performance.now() - start));
+        };
+      }
+
+      function onError() {
+        cleanup();
+        reject(
+          new Error(
+            `Video error: ${video.error?.message || "unknown"}`
+          )
+        );
+      }
+
+      function startPlayback() {
+        video.addEventListener("error", onError, { once: true });
+        const start = performance.now();
+        video.addEventListener("playing", onPlaying(start), { once: true });
+        video.play().catch((e) => {
+          cleanup();
+          reject(e);
+        });
+      }
+
+      if (Hls.isSupported()) {
+        const hls = new Hls();
+        hlsRef.current = hls;
+        hls.on(Hls.Events.ERROR, (_e, d) => {
+          if (d.fatal) {
+            cleanup();
+            reject(new Error(`HLS error: ${d.details}`));
+          }
+        });
+        hls.loadSource(playbackUrl);
+        hls.attachMedia(video);
+        hls.on(Hls.Events.MANIFEST_PARSED, startPlayback);
+      } else if (video.canPlayType("application/vnd.apple.mpegurl")) {
+        video.src = playbackUrl;
+        video.addEventListener("loadedmetadata", startPlayback, {
+          once: true,
+        });
+        video.addEventListener("error", onError, { once: true });
+      } else {
+        cleanup();
+        reject(new Error("HLS not supported"));
+      }
+    });
+  }
+
+  // ── Aggregated results ────────────────────────────────────────────
+
+  function aggregateResults(): ProviderMetrics[] {
+    const byProvider = new Map<string, ProviderMetrics[]>();
+    for (const run of runs) {
+      for (const r of run.results) {
+        if (r.status !== "success") continue;
+        if (!byProvider.has(r.provider)) byProvider.set(r.provider, []);
+        byProvider.get(r.provider)!.push(r);
+      }
+    }
+
+    return Array.from(byProvider.entries()).map(([, results]) => {
+      const n = results.length;
+      return {
+        provider: results[0].provider,
+        providerName: results[0].providerName,
+        uploadMs: Math.round(results.reduce((s, r) => s + r.uploadMs, 0) / n),
+        processingMs: Math.round(results.reduce((s, r) => s + r.processingMs, 0) / n),
+        startupMs: Math.round(results.reduce((s, r) => s + r.startupMs, 0) / n),
+        totalMs: Math.round(results.reduce((s, r) => s + r.totalMs, 0) / n),
+        playbackUrl: results[0].playbackUrl,
+        status: "success" as const,
+      };
+    });
+  }
+
+  const allResults = runs.flatMap((r) => r.results);
+  const aggregated = runs.length > 1 ? aggregateResults() : allResults;
+  const hasResults = allResults.length > 0;
+
+  return {
+    files,
+    setFiles,
+    enabled,
+    toggleProvider,
+    running,
+    progress,
+    runs,
+    error,
+    hasResults,
+    allResults,
+    aggregated,
+    videoRef,
+    runBenchmark,
+    reset,
+  };
+}

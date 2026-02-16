@@ -38,12 +38,6 @@ export const fastpixProvider: VideoProvider = {
     const mediaId = json.data.uploadId;
     const signedUrl = json.data.url;
 
-    // Debug logging — remove after confirming the fix
-    const token = process.env.FASTPIX_ACCESS_TOKEN || "";
-    console.log(`[FastPix] Upload created — mediaId (uploadId): ${mediaId}`);
-    console.log(`[FastPix] Signed URL present: ${!!signedUrl}`);
-    console.log(`[FastPix] Using credentials: token=${token.slice(0, 8)}…, secret=****`);
-
     if (!mediaId) {
       throw new Error(`FastPix upload response missing data.uploadId. Got keys: ${Object.keys(json.data).join(", ")}`);
     }
@@ -61,7 +55,6 @@ export const fastpixProvider: VideoProvider = {
 
   async checkStatus(trackingId) {
     const statusUrl = `${FASTPIX_API}/${trackingId}`;
-    console.log(`[FastPix] Polling status — GET ${statusUrl}`);
 
     const res = await fetch(statusUrl, {
       headers: {
@@ -71,12 +64,10 @@ export const fastpixProvider: VideoProvider = {
     });
     if (!res.ok) {
       const body = await res.text().catch(() => "");
-      console.error(`[FastPix] Status check failed (${res.status}): ${body}`);
       throw new Error(`FastPix status check failed (${res.status}): ${body}`);
     }
     const json = await res.json();
     const asset = json.data;
-    console.log(`[FastPix] Status response — status: "${asset.status}", playbackIds: ${JSON.stringify(asset.playbackIds)}`);
 
     if (asset.status === "Ready" && asset.playbackIds?.length) {
       return {
