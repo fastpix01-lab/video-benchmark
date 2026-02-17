@@ -13,8 +13,9 @@ export default function BlogIndexPage() {
   return (
     <div className="min-h-screen">
       {/* Header */}
-      <div className="border-b border-zinc-200 dark:border-zinc-800">
-        <div className="mx-auto max-w-5xl px-4 sm:px-6 pt-16 pb-12">
+      <div className="relative border-b border-zinc-200 dark:border-zinc-800 overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-b from-blue-50 to-transparent dark:from-blue-950/20 dark:to-transparent" />
+        <div className="relative mx-auto max-w-5xl px-4 sm:px-6 pt-16 pb-12">
           <p className="text-sm font-medium text-blue-600 dark:text-blue-400 mb-3 tracking-wide uppercase">
             Blog
           </p>

@@ -10,7 +10,8 @@ import type {
   CreateUploadResult,
   StatusResult,
 } from "@/lib/providers/types";
-import { PROVIDERS, DEFAULT_ENABLED, MAX_RETRIES, POLL_INTERVAL, POLL_TIMEOUT, NETWORK_PRESETS, ADVANCED_PLAYBACK_DURATION } from "@/lib/constants";
+import { PROVIDERS, MAX_RETRIES, POLL_INTERVAL, POLL_TIMEOUT, NETWORK_PRESETS, ADVANCED_PLAYBACK_DURATION } from "@/lib/constants";
+import { useBenchmarkContext } from "@/contexts/BenchmarkContext";
 
 export type Step = "uploading" | "processing" | "measuring";
 
@@ -24,16 +25,18 @@ export interface Progress {
 }
 
 export function useBenchmark() {
+  const {
+    runs, setRuns,
+    enabled, setEnabled,
+    advancedEnabled, setAdvancedEnabled,
+    networkPreset, setNetworkPreset,
+    resetAll,
+  } = useBenchmarkContext();
+
   const [files, setFiles] = useState<File[]>([]);
-  const [enabled, setEnabled] = useState<Set<string>>(
-    new Set(DEFAULT_ENABLED)
-  );
   const [running, setRunning] = useState(false);
   const [progress, setProgress] = useState<Progress | null>(null);
-  const [runs, setRuns] = useState<BenchmarkRun[]>([]);
   const [error, setError] = useState<string | null>(null);
-  const [advancedEnabled, setAdvancedEnabled] = useState(false);
-  const [networkPreset, setNetworkPreset] = useState<"3g" | "2g">("3g");
 
   const videoRef = useRef<HTMLVideoElement>(null);
   const hlsRef = useRef<Hls | null>(null);
@@ -618,6 +621,19 @@ export function useBenchmark() {
   const aggregated = runs.length > 1 ? aggregateResults() : allResults;
   const hasResults = allResults.length > 0;
 
+  const newBenchmark = useCallback(() => {
+    abortRef.current = true;
+    if (hlsRef.current) {
+      hlsRef.current.destroy();
+      hlsRef.current = null;
+    }
+    setRunning(false);
+    setProgress(null);
+    setFiles([]);
+    setError(null);
+    resetAll();
+  }, [resetAll]);
+
   return {
     files,
     setFiles,
@@ -637,5 +653,6 @@ export function useBenchmark() {
     setAdvancedEnabled,
     networkPreset,
     setNetworkPreset,
+    newBenchmark,
   };
 }

@@ -5,18 +5,20 @@ import { getPost, getAllSlugs, getRelatedPosts } from "@/lib/blog";
 import BlogCard from "@/app/components/blog/BlogCard";
 import ScrollProgress from "@/app/components/blog/ScrollProgress";
 import { LINKEDIN_URL } from "@/app/components/AuthorLink";
-import FastPixVsMux from "@/app/components/blog/posts/fastpix-vs-mux";
-import StartupTimeMatters from "@/app/components/blog/posts/startup-time-matters";
-import CloudinaryApiVideoGumlet from "@/app/components/blog/posts/cloudinary-apivideo-gumlet";
-import VideoProcessingPipelines from "@/app/components/blog/posts/video-processing-pipelines";
-import MeasuringVideoPerformance from "@/app/components/blog/posts/measuring-video-performance";
+import SixProviderBenchmark2026 from "@/app/components/blog/posts/six-provider-benchmark-2026";
+import StartupLatencyMostImportantMetric from "@/app/components/blog/posts/startup-latency-most-important-metric";
+import NetworkThrottlingImpact from "@/app/components/blog/posts/network-throttling-impact-on-video-delivery";
+import FastPixVsMux2026 from "@/app/components/blog/posts/fastpix-vs-mux-2026";
+import CloudinaryApiVideoGumletVimeoCompared from "@/app/components/blog/posts/cloudinary-apivideo-gumlet-vimeo-compared";
+import VideoInfrastructureTrends2026 from "@/app/components/blog/posts/video-infrastructure-trends-2026";
 
 const POST_COMPONENTS: Record<string, React.ComponentType> = {
-  "fastpix-vs-mux": FastPixVsMux,
-  "startup-time-matters": StartupTimeMatters,
-  "cloudinary-apivideo-gumlet": CloudinaryApiVideoGumlet,
-  "video-processing-pipelines": VideoProcessingPipelines,
-  "measuring-video-performance": MeasuringVideoPerformance,
+  "six-provider-benchmark-2026": SixProviderBenchmark2026,
+  "startup-latency-most-important-metric": StartupLatencyMostImportantMetric,
+  "network-throttling-impact-on-video-delivery": NetworkThrottlingImpact,
+  "fastpix-vs-mux-2026": FastPixVsMux2026,
+  "cloudinary-apivideo-gumlet-vimeo-compared": CloudinaryApiVideoGumletVimeoCompared,
+  "video-infrastructure-trends-2026": VideoInfrastructureTrends2026,
 };
 
 export function generateStaticParams() {
@@ -112,7 +114,7 @@ export default async function BlogPostPage({
 
         {/* Article body */}
         <div className="mx-auto max-w-3xl px-4 sm:px-6 py-12 sm:py-16">
-          <div className="prose prose-zinc dark:prose-invert prose-lg max-w-none prose-headings:font-bold prose-headings:tracking-tight prose-h2:text-2xl prose-h2:mt-12 prose-h2:mb-4 prose-p:leading-relaxed prose-li:leading-relaxed prose-a:text-blue-600 dark:prose-a:text-blue-400 prose-a:no-underline hover:prose-a:underline prose-code:text-sm prose-code:bg-zinc-100 dark:prose-code:bg-zinc-800 prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded prose-code:before:content-none prose-code:after:content-none prose-blockquote:border-blue-500 prose-blockquote:bg-blue-50/50 dark:prose-blockquote:bg-blue-950/20 prose-blockquote:rounded-r-lg prose-blockquote:py-1 prose-blockquote:not-italic prose-strong:text-zinc-900 dark:prose-strong:text-zinc-100 prose-img:rounded-xl">
+          <div className="prose prose-zinc dark:prose-invert prose-lg max-w-none prose-headings:font-bold prose-headings:tracking-tight prose-h2:text-2xl prose-h2:mt-12 prose-h2:mb-4 prose-p:leading-relaxed prose-li:leading-relaxed prose-a:text-blue-600 dark:prose-a:text-blue-400 prose-a:no-underline hover:prose-a:underline prose-code:text-sm prose-code:bg-zinc-100 dark:prose-code:bg-zinc-800 prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded prose-code:before:content-none prose-code:after:content-none prose-blockquote:border-blue-500 prose-blockquote:bg-blue-50/50 dark:prose-blockquote:bg-blue-950/20 prose-blockquote:rounded-r-lg prose-blockquote:py-1 prose-blockquote:not-italic prose-strong:text-zinc-900 dark:prose-strong:text-zinc-100 prose-img:rounded-xl prose-table:text-sm prose-th:text-left prose-th:font-semibold prose-td:py-2">
             <PostContent />
           </div>
         </div>

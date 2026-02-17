@@ -32,14 +32,17 @@ export default function BenchmarkPage() {
     setAdvancedEnabled,
     networkPreset,
     setNetworkPreset,
+    newBenchmark,
   } = useBenchmark();
 
   const [isDragOver, setIsDragOver] = useState(false);
 
   return (
-    <div className="min-h-screen py-12 px-4">
-      <div className="mx-auto max-w-7xl">
-        <div className="mb-8">
+    <div className="min-h-screen">
+      {/* Hero */}
+      <div className="relative border-b border-zinc-200 dark:border-zinc-800 overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-b from-blue-50 to-transparent dark:from-blue-950/20 dark:to-transparent" />
+        <div className="relative mx-auto max-w-7xl px-4 sm:px-6 pt-16 pb-12">
           <h1 className="text-3xl font-bold text-zinc-900 dark:text-zinc-100">
             Benchmark Dashboard
           </h1>
@@ -47,6 +50,9 @@ export default function BenchmarkPage() {
             Upload a video file and compare provider performance side by side.
           </p>
         </div>
+      </div>
+
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 py-12">
 
         {/* ── Two-Column Layout ─────────────────────────────── */}
         <div className="flex flex-col lg:flex-row gap-6">
@@ -171,6 +177,15 @@ export default function BenchmarkPage() {
                 )}
                 {hasResults && !running && (
                   <>
+                    <button
+                      onClick={newBenchmark}
+                      className="rounded-lg border border-zinc-300 dark:border-zinc-700 px-4 py-2.5
+                        text-sm font-medium text-zinc-600 dark:text-zinc-400
+                        hover:bg-blue-50 dark:hover:bg-blue-950/30 hover:border-blue-300 dark:hover:border-blue-800 hover:text-blue-600 dark:hover:text-blue-400
+                        active:scale-[0.98] transition-all duration-150 ease-out"
+                    >
+                      New Benchmark
+                    </button>
                     <button
                       onClick={() => downloadCsv(runs)}
                       className="rounded-lg border border-zinc-300 dark:border-zinc-700 px-4 py-2.5

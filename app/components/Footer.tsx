@@ -55,10 +55,10 @@ export default function Footer() {
         </div>
 
         <div className="mt-8 pt-8 border-t border-zinc-200 dark:border-zinc-800 text-center space-y-1">
-          <p className="text-xs text-zinc-400 dark:text-zinc-600">
+          <p className="text-xs text-zinc-400 dark:text-zinc-500">
             &copy; {new Date().getFullYear()} StreamBench
           </p>
-          <p className="text-xs text-zinc-400 dark:text-zinc-600">
+          <p className="text-xs text-zinc-400 dark:text-zinc-500">
             An independent benchmarking project by{" "}
             <a
               href={LINKEDIN_URL}

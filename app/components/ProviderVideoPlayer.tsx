@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState, useMemo } from "react";
+import { useRef, useState, useMemo, useEffect } from "react";
 import Hls from "hls.js";
 import type { ProviderMetrics } from "@/lib/providers/types";
 import type { Progress } from "@/hooks/useBenchmark";
@@ -36,6 +36,8 @@ export default function ProviderVideoPlayer({
   const hlsRef = useRef<Hls | null>(null);
   // Track which URL is currently loaded to avoid reloading same stream
   const loadedUrlRef = useRef<string>("");
+  // Track whether we've auto-played the first ready provider this run
+  const autoPlayedRef = useRef(false);
 
   const providers: ProviderEntry[] = useMemo(() =>
     PROVIDERS
@@ -58,6 +60,10 @@ export default function ProviderVideoPlayer({
       }),
     [enabledProviders, allResults, progress]
   );
+
+  // Derive the first ready provider's slug+url as a stable string for the effect
+  const firstReady = providers.find((p) => p.state === "ready");
+  const firstReadyKey = firstReady ? `${firstReady.slug}|${firstReady.playbackUrl}` : "";
 
   function destroyHls() {
     if (hlsRef.current) {
@@ -141,6 +147,25 @@ export default function ProviderVideoPlayer({
       loadAndPlay(entry.playbackUrl);
     }
   }
+
+  // Auto-play the first provider that becomes ready
+  useEffect(() => {
+    if (!firstReady || autoPlayedRef.current) return;
+    autoPlayedRef.current = true;
+    setActiveSlug(firstReady.slug);
+    loadAndPlay(firstReady.playbackUrl);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [firstReadyKey]);
+
+  // Reset auto-play flag when a new benchmark starts
+  useEffect(() => {
+    if (running && allResults.length === 0) {
+      autoPlayedRef.current = false;
+      loadedUrlRef.current = "";
+      setActiveSlug("");
+      setPlayerState("idle");
+    }
+  }, [running, allResults.length]);
 
   const activeEntry = providers.find((p) => p.slug === activeSlug);
   const hasAnyEnabled = providers.length > 0;
