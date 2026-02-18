@@ -78,7 +78,7 @@ export default function VideoInfrastructureTrends2026() {
         <li><strong>Low-latency ABR (LL-HLS, LL-DASH)</strong> — reducing segment duration to 1-2 seconds and using partial segments to enable faster quality switching with less visible impact</li>
       </ul>
       <p>
-        This trend is particularly relevant for mobile-first audiences. Our <a href="/blog/network-throttling-impact-on-video-delivery">network throttling analysis</a> showed that providers with better ABR strategies (fewer quality level switches, faster convergence to a stable bitrate) deliver significantly higher smoothness scores under constrained conditions.
+        This trend is particularly relevant for mobile-first audiences. Our <a href="/blog/network-throttling-impact-on-video-delivery">network throttling analysis</a> showed that providers with better ABR strategies (fewer ABR switches, faster convergence to a stable bitrate) deliver significantly higher smoothness scores under constrained conditions.
       </p>
 
       <table>
@@ -92,7 +92,7 @@ export default function VideoInfrastructureTrends2026() {
           </tr>
         </thead>
         <tbody>
-          <tr><td>Level switches in 10s</td><td>1</td><td>2</td><td>2</td><td>3</td></tr>
+          <tr><td>ABR switches in 10s</td><td>1</td><td>2</td><td>2</td><td>3</td></tr>
           <tr><td>Time to stable bitrate</td><td>~2s</td><td>~4s</td><td>~4s</td><td>~6s</td></tr>
           <tr><td>Stable bitrate (Kbps)</td><td>620</td><td>580</td><td>540</td><td>460</td></tr>
         </tbody>

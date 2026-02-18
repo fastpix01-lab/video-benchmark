@@ -76,31 +76,42 @@ export const apiVideoProvider: VideoProvider = {
     if (!res.ok) throw new Error(`api.video status check failed (${res.status})`);
     const data = await res.json();
 
-    // playable:true means at least one HLS quality is encoded
+    const hasFailed = data.encoding?.qualities?.some(
+      (q: { status: string }) => q.status === "failed"
+    );
+    if (hasFailed) {
+      return { ready: false, failed: true, playbackUrl: null, error: "api.video encoding failed" };
+    }
+
+    // encoding.playable means at least one quality is done, but the CDN may not
+    // have propagated the manifest yet. Probe the URL before declaring ready.
     if (data.encoding?.playable) {
-      // Fetch the video object to get the actual HLS playback URL
       const videoRes = await fetch(`${API_VIDEO_BASE}/videos/${trackingId}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (!videoRes.ok) throw new Error(`api.video video fetch failed (${videoRes.status})`);
       const video = await videoRes.json();
 
-      return {
-        ready: true,
-        failed: false,
-        playbackUrl: video.assets?.hls || `https://vod.api.video/vod/${trackingId}/hls/manifest.m3u8`,
-      };
+      const hlsUrl: string =
+        video.assets?.hls ||
+        `https://vod.api.video/vod/${trackingId}/hls/manifest.m3u8`;
+
+      // Verify the manifest is actually live on the CDN before handing it to HLS.js.
+      // If the CDN hasn't propagated yet it returns an HTML error page, which causes
+      // HLS.js manifestParsingError. We check for the #EXTM3U header to be sure.
+      try {
+        const probe = await fetch(hlsUrl, { signal: AbortSignal.timeout(5000) });
+        if (probe.ok) {
+          const text = await probe.text();
+          if (text.trimStart().startsWith("#EXTM3U")) {
+            return { ready: true, failed: false, playbackUrl: hlsUrl };
+          }
+        }
+      } catch {
+        // Probe failed — CDN not ready yet, keep polling.
+      }
     }
 
-    const hasFailed = data.encoding?.qualities?.some(
-      (q: { status: string }) => q.status === "failed"
-    );
-
-    return {
-      ready: false,
-      failed: !!hasFailed,
-      playbackUrl: null,
-      error: hasFailed ? "api.video encoding failed" : undefined,
-    };
+    return { ready: false, failed: false, playbackUrl: null };
   },
 };

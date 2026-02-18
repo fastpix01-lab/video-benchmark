@@ -491,7 +491,7 @@ const { trackingId, upload } = `}<span className="text-blue-600 dark:text-blue-4
                 <li><strong>Rebuffer events</strong> — counted via video <code>waiting</code> → <code>playing</code> event pairs</li>
                 <li><strong>Rebuffer duration</strong> — total milliseconds spent in buffering state</li>
                 <li><strong>Bitrate per fragment</strong> — computed from <code>Hls.Events.FRAG_LOADED</code> stats (bytes / load time)</li>
-                <li><strong>Quality level switches</strong> — counted via <code>Hls.Events.LEVEL_SWITCHED</code></li>
+                <li><strong>ABR switches</strong> — counted via <code>Hls.Events.LEVEL_SWITCHED</code></li>
               </ul>
             </li>
           </ol>
@@ -589,7 +589,7 @@ const { trackingId, upload } = `}<span className="text-blue-600 dark:text-blue-4
             </thead>
             <tbody>
               <tr><td>Rebuffer event</td><td>-15 per event</td><td>Each rebuffer is a visible, disruptive interruption to playback</td></tr>
-              <tr><td>Quality level switch</td><td>-5 per switch</td><td>Level switches cause visible quality changes but are less disruptive than rebuffers</td></tr>
+              <tr><td>ABR switch</td><td>-5 per switch</td><td>ABR switches cause visible quality changes but are less disruptive than rebuffers</td></tr>
             </tbody>
           </table>
 
@@ -599,15 +599,15 @@ const { trackingId, upload } = `}<span className="text-blue-600 dark:text-blue-4
               <tr><th>Score Range</th><th>Rating</th><th>Typical Scenario</th></tr>
             </thead>
             <tbody>
-              <tr><td>90-100</td><td>Excellent</td><td>Zero rebuffers, 0-2 level switches</td></tr>
-              <tr><td>70-89</td><td>Good</td><td>0-1 rebuffer, 2-3 level switches</td></tr>
+              <tr><td>90-100</td><td>Excellent</td><td>Zero rebuffers, 0-2 ABR switches</td></tr>
+              <tr><td>70-89</td><td>Good</td><td>0-1 rebuffer, 2-3 ABR switches</td></tr>
               <tr><td>50-69</td><td>Degraded</td><td>2+ rebuffers or frequent level oscillation</td></tr>
               <tr><td>0-49</td><td>Poor</td><td>Multiple rebuffers and unstable bitrate</td></tr>
             </tbody>
           </table>
 
           <blockquote>
-            <strong>Design decision:</strong> We weight rebuffers 3x more than level switches because research shows rebuffering causes 3-4x more viewer abandonment than quality changes (Conviva, 2024). The formula is intentionally simple and interpretable — we prioritize transparency over statistical complexity.
+            <strong>Design decision:</strong> We weight rebuffers 3x more than ABR switches because research shows rebuffering causes 3-4x more viewer abandonment than quality changes (Conviva, 2024). The formula is intentionally simple and interpretable — we prioritize transparency over statistical complexity.
           </blockquote>
 
           {/* ── Ensuring Fairness ─────────────────────────── */}

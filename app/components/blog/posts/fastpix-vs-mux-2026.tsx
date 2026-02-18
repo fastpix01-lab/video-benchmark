@@ -110,13 +110,13 @@ export default function FastPixVsMux2026() {
           <tr><td>Rebuffer Ratio</td><td>0.000</td><td>0.032</td><td>FastPix</td></tr>
           <tr><td>Avg Bitrate (Kbps)</td><td>620</td><td>580</td><td>FastPix +7%</td></tr>
           <tr><td>Peak Bitrate (Kbps)</td><td>740</td><td>720</td><td>FastPix +3%</td></tr>
-          <tr><td>Level Switches</td><td>1</td><td>2</td><td>FastPix</td></tr>
+          <tr><td>ABR Switches</td><td>1</td><td>2</td><td>FastPix</td></tr>
           <tr><td>Smoothness Score</td><td>95</td><td>80</td><td>FastPix +19%</td></tr>
         </tbody>
       </table>
 
       <p>
-        Under 3G throttling, FastPix leads on every advanced metric. The most significant difference is rebuffering: FastPix achieved zero rebuffer events while Mux had one (320 ms duration). FastPix also maintained a higher average bitrate (620 vs 580 Kbps) with fewer quality level switches, indicating a more stable ABR selection under constrained bandwidth.
+        Under 3G throttling, FastPix leads on every advanced metric. The most significant difference is rebuffering: FastPix achieved zero rebuffer events while Mux had one (320 ms duration). FastPix also maintained a higher average bitrate (620 vs 580 Kbps) with fewer ABR switches, indicating a more stable ABR selection under constrained bandwidth.
       </p>
 
       <h2>Developer Experience Comparison</h2>

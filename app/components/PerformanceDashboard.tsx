@@ -470,7 +470,7 @@ function AdvancedTab({ successful, colorMap }: {
                 <th className="py-2 px-3 text-right text-xs font-semibold text-zinc-500 dark:text-zinc-400">Rebuf. Time</th>
                 <th className="py-2 px-3 text-right text-xs font-semibold text-zinc-500 dark:text-zinc-400">Avg Bitrate</th>
                 <th className="py-2 px-3 text-right text-xs font-semibold text-zinc-500 dark:text-zinc-400">Peak Bitrate</th>
-                <th className="py-2 pl-3 text-right text-xs font-semibold text-zinc-500 dark:text-zinc-400">Level Switches</th>
+                <th className="py-2 pl-3 text-right text-xs font-semibold text-zinc-500 dark:text-zinc-400">ABR Switches</th>
               </tr>
             </thead>
             <tbody>

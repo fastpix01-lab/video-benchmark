@@ -98,7 +98,7 @@ export default function NetworkThrottlingImpact() {
             <th>3G Avg Bitrate (Kbps)</th>
             <th>3G Peak Bitrate (Kbps)</th>
             <th>2G Avg Bitrate (Kbps)</th>
-            <th>Level Switches (3G)</th>
+            <th>ABR Switches (3G)</th>
           </tr>
         </thead>
         <tbody>
@@ -112,7 +112,7 @@ export default function NetworkThrottlingImpact() {
       </table>
 
       <p>
-        FastPix and Mux maintained the highest average bitrates under 3G, indicating their ABR ladders are well-calibrated for constrained conditions. Notably, FastPix achieved this with only 1 quality level switch during the 10-second observation — meaning it quickly settled on a sustainable bitrate. Gumlet and Cloudinary each had 3 level switches, suggesting their ABR algorithms oscillate more under bandwidth pressure.
+        FastPix and Mux maintained the highest average bitrates under 3G, indicating their ABR ladders are well-calibrated for constrained conditions. Notably, FastPix achieved this with only 1 ABR switch during the 10-second observation — meaning it quickly settled on a sustainable bitrate. Gumlet and Cloudinary each had 3 ABR switches, suggesting their ABR algorithms oscillate more under bandwidth pressure.
       </p>
 
       <h2>What Makes Some Providers Better Under Throttling?</h2>
@@ -128,7 +128,7 @@ export default function NetworkThrottlingImpact() {
 
       <h2>Smoothness Score Comparison</h2>
       <p>
-        StreamBench&apos;s smoothness score (0-100) penalizes rebuffering events (-15 per event) and quality level switches (-5 per switch). A score of 80+ indicates a smooth viewing experience.
+        StreamBench&apos;s smoothness score (0-100) penalizes rebuffering events (-15 per event) and ABR switches (-5 per switch). A score of 80+ indicates a smooth viewing experience.
       </p>
 
       <table>

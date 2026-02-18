@@ -3,13 +3,16 @@
 import { useState, useEffect, useCallback } from "react";
 
 export function useTheme() {
-  const [theme, setThemeState] = useState<"light" | "dark">("dark");
+  const [theme, setThemeState] = useState<"light" | "dark">("light");
 
   useEffect(() => {
     const stored = localStorage.getItem("streambench-theme");
     if (stored === "light" || stored === "dark") {
       setThemeState(stored);
       document.documentElement.classList.toggle("dark", stored === "dark");
+    } else {
+      // No stored preference — apply light default
+      document.documentElement.classList.remove("dark");
     }
   }, []);
 

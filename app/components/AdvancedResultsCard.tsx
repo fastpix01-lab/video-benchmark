@@ -91,7 +91,7 @@ export default function AdvancedResultsCard({
           value={`${metrics.peakBitrateKbps} Kbps`}
         />
         <Metric
-          label="Level Switches"
+          label="ABR Switches"
           value={String(metrics.levelSwitchCount)}
         />
         <Metric

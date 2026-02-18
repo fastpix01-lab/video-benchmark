@@ -112,10 +112,10 @@ export function useBenchmark() {
       error: err,
     });
 
+    let uploadDone = false;
+
     for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
       try {
-        const totalStart = performance.now();
-
         const providerConfig = PROVIDERS.find((p) => p.slug === slug)!;
         setProgress({
           fileIndex,
@@ -158,6 +158,7 @@ export function useBenchmark() {
         }
 
         const uploadMs = Math.round(performance.now() - uploadStart);
+        uploadDone = true;
 
         if (abortRef.current) return fail("Cancelled");
 
@@ -171,7 +172,7 @@ export function useBenchmark() {
         });
 
         const processStart = performance.now();
-        const status = await pollUntilReady(slug, trackingId, (detail) => {
+        const { status, pollOverheadMs } = await pollUntilReady(slug, trackingId, (detail) => {
           setProgress({
             fileIndex,
             fileName: file.name,
@@ -181,7 +182,7 @@ export function useBenchmark() {
             detail,
           });
         });
-        const processingMs = Math.round(performance.now() - processStart);
+        const processingMs = Math.max(0, Math.round(performance.now() - processStart) - pollOverheadMs);
 
         if (!status.playbackUrl) throw new Error("No playback URL returned");
         if (abortRef.current) return fail("Cancelled");
@@ -212,7 +213,7 @@ export function useBenchmark() {
           advanced = await measureAdvancedMetrics(video, status.playbackUrl, NETWORK_PRESETS[networkPreset]);
         }
 
-        const totalMs = Math.round(performance.now() - totalStart);
+        const totalMs = uploadMs + processingMs + startupMs;
 
         return {
           provider: slug,
@@ -226,8 +227,11 @@ export function useBenchmark() {
           advanced,
         };
       } catch (err) {
-        if (attempt === MAX_RETRIES) {
-          return fail(err instanceof Error ? err.message : "Unknown error");
+        const message = err instanceof Error ? err.message : "Unknown error";
+        // Don't retry if the upload already completed — re-uploading the file
+        // won't fix a processing or playback error and wastes time.
+        if (uploadDone || attempt === MAX_RETRIES) {
+          return fail(message);
         }
       }
     }
@@ -321,9 +325,12 @@ export function useBenchmark() {
     slug: string,
     trackingId: string,
     onUpdate: (detail: string) => void
-  ): Promise<StatusResult> {
+  ): Promise<{ status: StatusResult; pollOverheadMs: number }> {
     const deadline = Date.now() + POLL_TIMEOUT;
     let poll = 0;
+    // Track when we last received a "not ready" response so we can estimate
+    // how long we waited after the provider actually became ready.
+    let lastNotReadyAt = performance.now();
 
     while (Date.now() < deadline) {
       if (abortRef.current) throw new Error("Cancelled");
@@ -336,9 +343,16 @@ export function useBenchmark() {
       }
       const data: StatusResult = await res.json();
 
-      if (data.ready) return data;
+      if (data.ready) {
+        // The provider became ready somewhere between lastNotReadyAt and now.
+        // Subtract half the detection window as an unbiased estimate of the lag.
+        const timeSinceLastNotReady = performance.now() - lastNotReadyAt;
+        const pollOverheadMs = Math.round(timeSinceLastNotReady / 2);
+        return { status: data, pollOverheadMs };
+      }
       if (data.failed) throw new Error(data.error || "Processing failed");
 
+      lastNotReadyAt = performance.now();
       onUpdate(`Poll ${poll}...`);
       await new Promise((r) => setTimeout(r, POLL_INTERVAL));
     }

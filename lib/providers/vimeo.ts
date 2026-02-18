@@ -31,8 +31,15 @@ export const vimeoProvider: VideoProvider = {
     });
 
     if (!res.ok) {
-      const body = await res.text();
-      throw new Error(`Vimeo upload create failed (${res.status}): ${body}`);
+      const body = await res.json().catch(() => null);
+      const code: number | undefined = body?.error_code;
+      const short =
+        code === 8002 ? "Vimeo token missing user ID — use a personal access token, not a client credentials token" :
+        code === 3400 ? "Vimeo storage quota exceeded — free up space in your Vimeo account" :
+        res.status === 401 ? "Vimeo authentication failed — check VIMEO_ACCESS_TOKEN" :
+        res.status === 403 ? "Vimeo upload forbidden — your app may need upload scope" :
+        (body?.error as string | undefined) ?? `Vimeo upload failed (${res.status})`;
+      throw new Error(short);
     }
 
     const json = await res.json();
